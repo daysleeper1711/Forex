@@ -1,4 +1,4 @@
-FOREX TRADE LOG
+#FOREX TRADE LOG
 Forex trade log back end , written by java
 Using jax-rs for rest api
 
