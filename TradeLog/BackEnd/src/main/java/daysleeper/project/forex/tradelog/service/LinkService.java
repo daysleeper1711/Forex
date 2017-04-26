@@ -32,7 +32,6 @@ public class LinkService {
                     .queryParam("size", size)
                     .build()
                     .toString();
-            System.out.println(">>>>>>>>>>first: " + firstPage);
             paginationLinks.setFirstPage(firstPage);
         }
         if (page < totalPages) {
@@ -42,7 +41,6 @@ public class LinkService {
                     .queryParam("size", size)
                     .build()
                     .toString();
-            System.out.println(">>>>>>>>>>last: " + lastPage);
             paginationLinks.setLastPage(lastPage);
         }
         if (page > 3) {
@@ -52,7 +50,6 @@ public class LinkService {
                     .queryParam("size", size)
                     .build()
                     .toString();
-            System.out.println(">>>>>>>>>>previous: " + previousPage);
             paginationLinks.setPreviousPage(previousPage);
         }
         if (page < totalPages - 2) {
@@ -62,7 +59,6 @@ public class LinkService {
                     .queryParam("size", size)
                     .build()
                     .toString();
-            System.out.println(">>>>>>>>>>next: " + nextPage);
             paginationLinks.setNextPage(nextPage);
         }
         return paginationLinks;

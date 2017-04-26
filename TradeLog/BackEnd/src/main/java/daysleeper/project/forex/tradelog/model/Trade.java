@@ -1,15 +1,9 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package daysleeper.project.forex.tradelog.model;
 
 import daysleeper.project.forex.tradelog.resources.TradeResource;
 import daysleeper.project.forex.tradelog.service.LinkService;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import javax.json.Json;
@@ -22,12 +16,12 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.PostLoad;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.core.UriInfo;
 
 @Entity
@@ -77,6 +71,7 @@ public class Trade implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tradeSymbol")
+    @NotNull(message = "symbol is null")
     public Symbol getSymbol() {
         return symbol;
     }
@@ -87,6 +82,7 @@ public class Trade implements Serializable {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tradePosition")
+    @NotNull(message = "position is null")
     public Position getPosition() {
         return position;
     }
@@ -96,6 +92,7 @@ public class Trade implements Serializable {
     }
 
     @Column(name = "tradeSize", precision = 3, scale = 2)
+    @NotNull(message = "size is null")
     public BigDecimal getTradeSize() {
         return tradeSize;
     }
@@ -105,6 +102,7 @@ public class Trade implements Serializable {
     }
 
     @Column(name = "tradeEnter", precision = 6, scale = 5)
+    @NotNull(message = "price enter is null")
     public BigDecimal getEnter() {
         return enter;
     }
@@ -142,6 +140,7 @@ public class Trade implements Serializable {
 
     @Temporal(TemporalType.DATE)
     @Column(name = "dateEnter")
+    @NotNull(message = "date enter is null")
     public Date getDateEnter() {
         return dateEnter;
     }
@@ -152,6 +151,7 @@ public class Trade implements Serializable {
 
     @Temporal(TemporalType.TIME)
     @Column(name = "timeEnter")
+    @NotNull(message = "time enter is null")
     public Date getTimeEnter() {
         return timeEnter;
     }
@@ -181,6 +181,7 @@ public class Trade implements Serializable {
     }
 
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "created", updatable = false)
     public Date getCreated() {
         return created;
     }
@@ -190,6 +191,7 @@ public class Trade implements Serializable {
     }
 
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "lastUpdated")
     public Date getLastUpdated() {
         return lastUpdated;
     }
@@ -257,7 +259,7 @@ public class Trade implements Serializable {
     //-------------------------------------------------
     // toJson()
     //-------------------------------------------------
-    public JsonObject toJson(UriInfo uriInfo, boolean expand) {
+    public JsonObject toJson(UriInfo uriInfo, boolean expand){
         JsonObjectBuilder b = Json.createObjectBuilder();
         b.add("id", this.id);
         b.add("symbol", this.symbol.toString());

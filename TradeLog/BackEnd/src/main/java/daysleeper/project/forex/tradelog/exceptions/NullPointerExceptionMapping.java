@@ -7,10 +7,10 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class IllegalArgumentExceptionMapping extends ExceptionNotification implements ExceptionMapper<IllegalArgumentException> {
+public class NullPointerExceptionMapping extends ExceptionNotification implements ExceptionMapper<NullPointerException> {
 
     @Override
-    public Response toResponse(IllegalArgumentException exception) {
+    public Response toResponse(NullPointerException exception) {
         Notification notification = super.createNotification(exception.getMessage());
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(notification.toJson())

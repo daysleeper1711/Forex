@@ -2,7 +2,7 @@ package daysleeper.project.forex.tradelog.service;
 
 import java.util.List;
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import javax.persistence.Persistence;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
@@ -13,8 +13,8 @@ public abstract class AbstractService<T> {
     //-------------------------------------------------
     // Inject entity manager
     //-------------------------------------------------
-    @PersistenceContext(unitName = "TradeLogPU")
-    protected EntityManager em;
+    protected EntityManager em = Persistence.createEntityManagerFactory("TradeLogPU")
+            .createEntityManager();
 
     //-------------------------------------------------
     // Entity class declaration
@@ -32,21 +32,28 @@ public abstract class AbstractService<T> {
     // Persist
     //-------------------------------------------------
     public void persist(T entity) {
+        em.getTransaction().begin();
         em.persist(entity);
+        em.getTransaction().commit();
     }
 
     //-------------------------------------------------
     // Merge
     //-------------------------------------------------
     public T merge(T entity) {
-        return em.merge(entity);
+        em.getTransaction().begin();
+        em.merge(entity);
+        em.getTransaction().commit();
+        return entity;
     }
 
     //-------------------------------------------------
     // Remove
     //-------------------------------------------------
     public void remove(T entity) {
+        em.getTransaction().begin();
         em.remove(em.merge(entity));
+        em.getTransaction().commit();
     }
 
     //-------------------------------------------------

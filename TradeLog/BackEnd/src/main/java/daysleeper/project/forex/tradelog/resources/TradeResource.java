@@ -5,7 +5,6 @@
  */
 package daysleeper.project.forex.tradelog.resources;
 
-import daysleeper.project.forex.tradelog.exceptions.JsonObjectValidationException;
 import daysleeper.project.forex.tradelog.model.Position;
 import daysleeper.project.forex.tradelog.model.Symbol;
 import daysleeper.project.forex.tradelog.model.Trade;
@@ -16,13 +15,18 @@ import daysleeper.project.forex.tradelog.utilies.Notification;
 import daysleeper.project.forex.tradelog.utilies.NotificationLv;
 import daysleeper.project.forex.tradelog.utilies.Pagination;
 import daysleeper.project.forex.tradelog.utilies.PaginationLinks;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.ejb.EJB;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -39,6 +43,7 @@ import javax.ws.rs.core.UriInfo;
 @Path("trades")
 public class TradeResource {
 
+    private Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
     @Context
     UriInfo info;
 
@@ -102,7 +107,7 @@ public class TradeResource {
         if (trade == null) {
             notification.setSuccess(false);
             notification.setNotificationLv(NotificationLv.WARNING);
-            notification.setMessage("Id" + id + "is not correct");
+            notification.setMessage("Id " + id + " is not correct");
             return Response.ok(notification.toJson())
                     .type(MediaType.APPLICATION_JSON)
                     .build();
@@ -116,37 +121,44 @@ public class TradeResource {
     @POST
     public Response addTrade(JsonObject jsonInput) {
         JsonObjectParser parser = new JsonObjectParser();
+        JsonObjectBuilder builder = Json.createObjectBuilder();
+        //--- parser jsonInput to trade object
         Trade trade = parser.jsonTradeParser(jsonInput);
-        trade.setId(ts.idGenerator());
-        Notification notification = new Notification();
-        try {
-            ts.persist(trade);
-            notification.setSuccess(true);
-            notification.setNotificationLv(NotificationLv.INFO);
-            notification.setMessage("Success created");
-            JsonObject jsonRes = Json.createObjectBuilder()
-                    .add("notification", notification.toJson())
-                    .add("trade", trade.toJson(info, false))
-                    .build();
-            return Response.ok(jsonRes)
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
-        } catch (Exception e) {
-            notification.setSuccess(false);
-            notification.setNotificationLv(NotificationLv.ERROR);
-            notification.setMessage("Some thing error while inserting");
+        //--- validate the trade
+        Set<ConstraintViolation<Trade>> validate = validator.validate(trade);
+        List<String> messages = new ArrayList<>();
+        for (ConstraintViolation<Trade> constraintViolation : validate) {
+            messages.add(constraintViolation.getMessage());
+        }
+        if (!messages.isEmpty()) {
+            Notification validation = new Notification();
+            validation.setSuccess(false);
+            validation.setNotificationLv(NotificationLv.ERROR);
+            validation.setMessages(messages);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(notification.toJson())
-                    .type(MediaType.APPLICATION_JSON)
+                    .entity(validation.toJson())
+                    .type(MediaType.APPLICATION_JSON_TYPE)
                     .build();
         }
+        //--- generate id
+        trade.setId(ts.idGenerator());
+        Notification notification = new Notification();
+        ts.persist(trade);
+        notification.setSuccess(true);
+        notification.setNotificationLv(NotificationLv.INFO);
+        notification.setMessage("Success created");
+        builder.add("notification", notification.toJson())
+                .add("trade", trade.toJson(info, false));
         //--- json return
-
+        return Response.ok(builder.build())
+                .type(MediaType.APPLICATION_JSON)
+                .build();
     }//--- end
 
     @PUT
     @Path("{id}")
     public Response updateTrade(JsonObject jsonInput, @PathParam("id") String id) {
+        JsonObjectBuilder builder = Json.createObjectBuilder();
         Notification notification = new Notification();
         if (id == null) {
             notification.setSuccess(false);
@@ -159,11 +171,34 @@ public class TradeResource {
         }
         Trade trade = ts.findById(id);
         if (trade == null) {
-            throw new JsonObjectValidationException("id" + id + "is not correct");
+            notification.setSuccess(false);
+            notification.setNotificationLv(NotificationLv.WARNING);
+            notification.setMessage("Id " + id + " is not correct");
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(notification.toJson())
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
         }
         //--- object parser
         JsonObjectParser parser = new JsonObjectParser();
         Trade uTrade = parser.jsonTradeParser(jsonInput);
+         //--- validate the uTrade
+        Set<ConstraintViolation<Trade>> validate = validator.validate(uTrade);
+        List<String> messages = new ArrayList<>();
+        for (ConstraintViolation<Trade> constraintViolation : validate) {
+            messages.add(constraintViolation.getMessage());
+        }
+        if (!messages.isEmpty()) {
+            Notification validation = new Notification();
+            validation.setSuccess(false);
+            validation.setNotificationLv(NotificationLv.ERROR);
+            validation.setMessages(messages);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(validation.toJson())
+                    .type(MediaType.APPLICATION_JSON_TYPE)
+                    .build();
+        }
+        //--- update the trade
         trade.setSymbol(uTrade.getSymbol());
         trade.setPosition(uTrade.getPosition());
         trade.setTradeSize(uTrade.getTradeSize());
@@ -177,26 +212,14 @@ public class TradeResource {
         trade.setTimeStop(uTrade.getTimeStop());
         trade.setDescription(uTrade.getDescription());
         //--- json response
-        try {
-            ts.merge(trade);
-            notification.setSuccess(true);
-            notification.setNotificationLv(NotificationLv.INFO);
-            notification.setMessage("Success updated");
-            JsonObject jsonRes = Json.createObjectBuilder()
-                    .add("notification", notification.toJson())
-                    .add("trade", trade.toJson(info, false))
-                    .build();
-            return Response.ok(jsonRes)
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
-        } catch (Exception e) {
-            notification.setSuccess(false);
-            notification.setNotificationLv(NotificationLv.ERROR);
-            notification.setMessage("Some thing error while updating");
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(notification.toJson())
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
-        }
+        ts.merge(trade);
+        notification.setSuccess(true);
+        notification.setNotificationLv(NotificationLv.INFO);
+        notification.setMessage("Success updated");
+        builder.add("notification", notification.toJson())
+                .add("trade", trade.toJson(info, false));
+        return Response.ok(builder.build())
+                .type(MediaType.APPLICATION_JSON)
+                .build();
     }//--- end
 }

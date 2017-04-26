@@ -7,15 +7,15 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 @Provider
-public class IllegalArgumentExceptionMapping extends ExceptionNotification implements ExceptionMapper<IllegalArgumentException> {
+public class JsonObjectParserValidationExceptionMapping extends ExceptionNotification implements ExceptionMapper<JsonObjectParserValidationException>{
 
     @Override
-    public Response toResponse(IllegalArgumentException exception) {
-        Notification notification = super.createNotification(exception.getMessage());
+    public Response toResponse(JsonObjectParserValidationException exception) {
+        Notification notification = super.createNotificationValidation(exception.getMessages());
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(notification.toJson())
                 .type(MediaType.APPLICATION_JSON_TYPE)
                 .build();
     }
-
+    
 }

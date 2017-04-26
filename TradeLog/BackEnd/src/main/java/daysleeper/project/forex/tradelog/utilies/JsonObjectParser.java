@@ -1,6 +1,6 @@
 package daysleeper.project.forex.tradelog.utilies;
 
-import daysleeper.project.forex.tradelog.exceptions.JsonObjectValidationException;
+import daysleeper.project.forex.tradelog.exceptions.JsonObjectParserValidationException;
 import daysleeper.project.forex.tradelog.model.Position;
 import daysleeper.project.forex.tradelog.model.Symbol;
 import daysleeper.project.forex.tradelog.model.Trade;
@@ -9,7 +9,9 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.stream.JsonParser;
@@ -26,6 +28,7 @@ public class JsonObjectParser {
     // JsonObject to Trade entity
     //-------------------------------------------------
     public Trade jsonTradeParser(JsonObject jsonInput) {
+        List<String> validateMessages = new ArrayList<>();
         Trade trade = new Trade();
         JsonParser parser = Json.createParser(new StringReader(jsonInput.toString()));
         while (parser.hasNext()) {
@@ -33,7 +36,7 @@ public class JsonObjectParser {
             while (parser.hasNext() && !event.equals(JsonParser.Event.KEY_NAME)) {
                 event = parser.next();
             }
-            
+
             //--- parsing symbol of trade
             if (event.equals(JsonParser.Event.KEY_NAME) && parser.getString().matches("symbol")) {
                 event = parser.next();
@@ -44,10 +47,9 @@ public class JsonObjectParser {
                         Symbol symbol = Symbol.valueOf(symbolVal);
                         trade.setSymbol(symbol);
                         break;
-                    case VALUE_NULL:
-                        throw new JsonObjectValidationException("Symbol is not null");
                     case VALUE_NUMBER:
-                        throw new JsonObjectValidationException("Symbol must be string");
+                        validateMessages.add("symbol must be string");
+                        break;
                     default:
                         break;
                 }
@@ -63,10 +65,9 @@ public class JsonObjectParser {
                         Position position = Position.valueOf(positionVal);
                         trade.setPosition(position);
                         break;
-                    case VALUE_NULL:
-                        throw new JsonObjectValidationException("Position is null");
                     case VALUE_NUMBER:
-                        throw new JsonObjectValidationException("Position must be string");
+                        validateMessages.add("position must be string");
+                        break;
                     default:
                         break;
                 }
@@ -78,9 +79,8 @@ public class JsonObjectParser {
                 //--- validation size's field
                 switch (event) {
                     case VALUE_STRING:
-                        throw new JsonObjectValidationException("Size must be number");
-                    case VALUE_NULL:
-                        throw new JsonObjectValidationException("Size is null");
+                        validateMessages.add("size must be string");
+                        break;
                     case VALUE_NUMBER:
                         BigDecimal size = parser.getBigDecimal().round(MathContext.DECIMAL32);
                         trade.setTradeSize(size);
@@ -93,12 +93,11 @@ public class JsonObjectParser {
             //--- parsing enter of trade
             if (event.equals(JsonParser.Event.KEY_NAME) && parser.getString().matches("enter")) {
                 event = parser.next();
-                //--- validation size's field
+                //--- validation enter's field
                 switch (event) {
                     case VALUE_STRING:
-                        throw new JsonObjectValidationException("Enter must be number");
-                    case VALUE_NULL:
-                        throw new JsonObjectValidationException("Enter is null");
+                        validateMessages.add("enter must be number");
+                        break;
                     case VALUE_NUMBER:
                         BigDecimal enter = parser.getBigDecimal().round(MathContext.DECIMAL32);
                         trade.setEnter(enter);
@@ -114,9 +113,7 @@ public class JsonObjectParser {
                 //--- validation takeProfit's field
                 switch (event) {
                     case VALUE_STRING:
-                        throw new JsonObjectValidationException("Take profit must be number");
-                    case VALUE_NULL:
-                        trade.setTakeProfit(null);
+                        validateMessages.add("take profit must be number");
                         break;
                     case VALUE_NUMBER:
                         BigDecimal tp = parser.getBigDecimal().round(MathContext.DECIMAL32);
@@ -133,9 +130,7 @@ public class JsonObjectParser {
                 //--- validation stopLoss's field
                 switch (event) {
                     case VALUE_STRING:
-                        throw new JsonObjectValidationException("stop loss must be number");
-                    case VALUE_NULL:
-                        trade.setStoploss(null);
+                        validateMessages.add("stop loss must be number");
                         break;
                     case VALUE_NUMBER:
                         BigDecimal sl = parser.getBigDecimal().round(MathContext.DECIMAL32);
@@ -152,9 +147,7 @@ public class JsonObjectParser {
                 //--- validation stop's field
                 switch (event) {
                     case VALUE_STRING:
-                        throw new JsonObjectValidationException("Stop must be number");
-                    case VALUE_NULL:
-                        trade.setStop(null);
+                        validateMessages.add("stop must be number");
                         break;
                     case VALUE_NUMBER:
                         BigDecimal stop = parser.getBigDecimal().round(MathContext.DECIMAL32);
@@ -176,13 +169,12 @@ public class JsonObjectParser {
                             Date dateEnter = dateFormat.parse(dateEnterVal);
                             trade.setDateEnter(dateEnter);
                         } catch (ParseException ex) {
-                            throw new JsonObjectValidationException("Date enter is not valid string for date type");
+                            validateMessages.add("date enter format is dd-MM-yyyy");
                         }
                         break;
-                    case VALUE_NULL:
-                        throw new JsonObjectValidationException("Date enter is null");
                     case VALUE_NUMBER:
-                        throw new JsonObjectValidationException("Date enter must be a string");
+                        validateMessages.add("date enter must be string");
+                        break;
                     default:
                         break;
                 }
@@ -199,18 +191,16 @@ public class JsonObjectParser {
                             Date timeEnter = timeFormat.parse(timeEnterVal);
                             trade.setTimeEnter(timeEnter);
                         } catch (ParseException ex) {
-                            throw new JsonObjectValidationException("Time enter is not valid string for date type");
+                            validateMessages.add("time enter format is HH:mm 24h");
                         }
                         break;
-                    case VALUE_NULL:
-                        throw new JsonObjectValidationException("Time enter is null");
                     case VALUE_NUMBER:
-                        throw new JsonObjectValidationException("Time enter must be a string");
+                        validateMessages.add("time enter must be a string");
                     default:
                         break;
                 }
             }//--- end parsing time enter
-            
+
             //--- parsing date stop of trade
             if (event.equals(JsonParser.Event.KEY_NAME) && parser.getString().matches("date stop")) {
                 event = parser.next();
@@ -222,19 +212,16 @@ public class JsonObjectParser {
                             Date dateStop = dateFormat.parse(dateStopVal);
                             trade.setDateStop(dateStop);
                         } catch (ParseException ex) {
-                            throw new JsonObjectValidationException("Date stop is not valid string for date type");
+                            validateMessages.add("date stop format is dd-MM-yyyy");
                         }
                         break;
-                    case VALUE_NULL:
-                        trade.setDateStop(null);
-                        break;
                     case VALUE_NUMBER:
-                        throw new JsonObjectValidationException("Date stop must be a string");
+                        validateMessages.add("date stop must be a string");
                     default:
                         break;
                 }
             }//--- end parsing date stop
-            
+
             //--- parsing time stop of trade
             if (event.equals(JsonParser.Event.KEY_NAME) && parser.getString().matches("time stop")) {
                 event = parser.next();
@@ -246,19 +233,16 @@ public class JsonObjectParser {
                             Date timeStop = timeFormat.parse(timeStopVal);
                             trade.setTimeStop(timeStop);
                         } catch (ParseException ex) {
-                            throw new JsonObjectValidationException("Time stop is not valid string for date type");
+                            validateMessages.add("time stop format is HH:mm 24h");
                         }
                         break;
-                    case VALUE_NULL:
-                        trade.setTimeStop(null);
-                        break;
                     case VALUE_NUMBER:
-                        throw new JsonObjectValidationException("Time stop must be a string");
+                        validateMessages.add("time stop must be a string");
                     default:
                         break;
                 }
             }//--- end parsing time stop
-            
+
             //--- parsing description of trade
             if (event.equals(JsonParser.Event.KEY_NAME) && parser.getString().matches("description")) {
                 event = parser.next();
@@ -268,15 +252,15 @@ public class JsonObjectParser {
                         String description = parser.getString();
                         trade.setDescription(description);
                         break;
-                    case VALUE_NULL:
-                        trade.setDescription(null);
-                        break;
                     case VALUE_NUMBER:
-                        throw new JsonObjectValidationException("description must be string");
+                        validateMessages.add("description must be string");
                     default:
                         break;
                 }
             }//--- end parsing description
+        }
+        if (!validateMessages.isEmpty()) {
+            throw new JsonObjectParserValidationException(validateMessages);
         }
         return trade;
     }

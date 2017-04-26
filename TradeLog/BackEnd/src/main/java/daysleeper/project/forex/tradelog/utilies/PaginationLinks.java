@@ -1,6 +1,5 @@
 package daysleeper.project.forex.tradelog.utilies;
 
-import java.math.BigDecimal;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
